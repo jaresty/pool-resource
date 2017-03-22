@@ -112,15 +112,21 @@ func (glh *GitLockHandler) ResetLock() error {
 }
 
 func (glh *GitLockHandler) AddLock(lock string, contents []byte, initiallyClaimed bool) (string, error) {
-	var claimedness string
+	var claimedness, otherClaimedness string
 	if initiallyClaimed {
 		claimedness = "claimed"
+		otherClaimedness = "unclaimed"
 	} else {
 		claimedness = "unclaimed"
+		otherClaimedness = "claimed"
 	}
 
 	pool := filepath.Join(glh.dir, glh.Source.Pool)
 	lockPath := filepath.Join(pool, claimedness, lock)
+	otherLockPath := filepath.Join(pool, otherClaimedness, lock)
+	if _, err := os.Stat(otherLockPath); !os.IsNotExist(err) {
+		return "", fmt.Errorf("A lock by this name already exists in this pool.")
+	}
 
 	err := ioutil.WriteFile(lockPath, contents, 0555)
 	if err != nil {
